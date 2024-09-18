@@ -26,9 +26,10 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.95);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-size: 48px;
+            font-size: 24px;
             color: white;
             z-index: 1000;
         }
@@ -59,16 +60,24 @@
         <button onclick="changePage('prev')" id="prevButton">Previous (Testing)</button>
         <button onclick="changePage('next')" id="nextButton">Next</button>
     </div>
-    <div id="overlay" class="hidden"></div>
+    <div id="overlay" class="hidden">
+        <div id="overlayText"></div>
+        <button id="resumeButton" onclick="togglePause()" class="hidden">Resume</button>
+    </div>
 
     <script>
-        let currentPage = 0;
+        let currentPage = -1; // Start at -1 for the introduction page
         let pageTimes = [];
         let startTime;
         let isPaused = false;
         let pauseStartTime;
         let totalPauseTime = 0;
         let timeoutId;
+
+        const introPage = {
+            content: "Welcome to the Reading Comprehension Test. This test consists of passages followed by questions. You will have a limited time for each section. Click 'Next' to begin.",
+            timeLimit: Infinity
+        };
 
         const passages = [
             { content: "Text for passage one: [Insert your first passage here]", timeLimit: 180 },
@@ -105,7 +114,7 @@
         let pageOrder = [];
 
         function shufflePages() {
-            pageOrder = [];
+            pageOrder = [{type: 'intro', index: 0}];
             const passageIndices = Array.from({length: passages.length}, (_, i) => i);
             while (passageIndices.length > 0) {
                 const index = Math.floor(Math.random() * passageIndices.length);
@@ -130,9 +139,11 @@
                 const currentPageData = pageOrder[currentPage];
                 const timeLimit = currentPageData.type === 'passage' 
                     ? passages[currentPageData.index].timeLimit 
-                    : questions[currentPageData.index][0].timeLimit;
+                    : currentPageData.type === 'questions'
+                    ? questions[currentPageData.index][0].timeLimit
+                    : Infinity;
 
-                if (elapsedTime >= timeLimit) {
+                if (timeLimit !== Infinity && elapsedTime >= timeLimit) {
                     alert("Time's up for this section!");
                     changePage('next');
                 } else {
@@ -145,29 +156,35 @@
             isPaused = !isPaused;
             const pauseButton = document.getElementById('pauseButton');
             const overlay = document.getElementById('overlay');
+            const resumeButton = document.getElementById('resumeButton');
+            const overlayText = document.getElementById('overlayText');
+
             if (isPaused) {
                 pauseButton.textContent = 'Resume';
                 pauseStartTime = Date.now();
-                overlay.textContent = 'PAUSED';
+                overlayText.textContent = 'PAUSED';
                 overlay.classList.remove('hidden');
+                resumeButton.classList.remove('hidden');
             } else {
                 pauseButton.textContent = 'Pause';
                 totalPauseTime += Date.now() - pauseStartTime;
                 overlay.classList.add('hidden');
+                resumeButton.classList.add('hidden');
                 checkTime();
             }
         }
 
         function showOverlay() {
             const overlay = document.getElementById('overlay');
+            const overlayText = document.getElementById('overlayText');
             overlay.classList.remove('hidden');
             let countdown = 5;
-            overlay.textContent = countdown;
+            overlayText.innerHTML = `Next section in:<br>${countdown}`;
 
             const countdownInterval = setInterval(() => {
                 countdown--;
                 if (countdown > 0) {
-                    overlay.textContent = countdown;
+                    overlayText.innerHTML = `Next section in:<br>${countdown}`;
                 } else {
                     clearInterval(countdownInterval);
                     overlay.classList.add('hidden');
@@ -204,7 +221,9 @@
             const content = document.getElementById('content');
             const currentPageData = pageOrder[currentPage];
 
-            if (currentPageData.type === 'passage') {
+            if (currentPageData.type === 'intro') {
+                content.innerHTML = `<p>${introPage.content}</p>`;
+            } else if (currentPageData.type === 'passage') {
                 content.innerHTML = `<p>${passages[currentPageData.index].content}</p>`;
             } else {
                 let questionsHTML = '';
@@ -237,9 +256,11 @@
             const content = document.getElementById('content');
             let summaryHTML = '<h1>Test Summary</h1><ul>';
             pageOrder.forEach((page, index) => {
-                const pageType = page.type === 'passage' ? 'Passage' : 'Questions';
-                const pageNumber = page.index + 1;
-                summaryHTML += `<li>${pageType} ${pageNumber}: ${pageTimes[index].toFixed(2)} seconds</li>`;
+                if (page.type !== 'intro') {
+                    const pageType = page.type === 'passage' ? 'Passage' : 'Questions';
+                    const pageNumber = page.index + 1;
+                    summaryHTML += `<li>${pageType} ${pageNumber}: ${pageTimes[index].toFixed(2)} seconds</li>`;
+                }
             });
             summaryHTML += `<li>Total Pause Time: ${(totalPauseTime / 1000).toFixed(2)} seconds</li>`;
             summaryHTML += '</ul>';
