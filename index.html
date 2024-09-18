@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timed Reading Pages</title>
+    <title>Reading Comprehension Test</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,82 +13,163 @@
             max-width: 800px;
             margin: 0 auto;
         }
-        #timer {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
+        #pauseButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
         }
-        .bold {
-            font-weight: bold;
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 48px;
+            color: white;
+            z-index: 1000;
         }
-        #navigation {
-            margin-top: 20px;
+        .hidden {
+            display: none !important;
         }
         button {
             padding: 10px 20px;
             font-size: 16px;
+            margin: 5px;
         }
     </style>
 </head>
 <body>
-    <div id="timer">Time remaining: <span id="time">00:00</span></div>
-    <div id="content">
-        <h1>Page 1</h1>
-        <p>This is a sample text with some <span class="bold">bold words</span>. You can easily modify this content for each page.</p>
-    </div>
+    <button id="pauseButton" onclick="togglePause()">Pause</button>
+    <div id="content"></div>
     <div id="navigation">
-        <button onclick="changePage(2)">Next Page</button>
+        <button onclick="changePage('prev')" id="prevButton">Previous (Testing)</button>
+        <button onclick="changePage('next')" id="nextButton">Next</button>
     </div>
+    <div id="overlay" class="hidden"></div>
 
     <script>
-        let timeLeft = 60; // Set initial time in seconds
-        let timerId;
+        let currentPage = 0;
+        let pageTimes = [0, 0, 0, 0, 0];
+        let startTime;
+        let isPaused = false;
+        let pauseStartTime;
+        let totalPauseTime = 0;
+        let timeoutId;
+
+        const pages = [
+            { title: "Introduction", content: "Welcome to the reading comprehension test. Click 'Next' to begin.", timeLimit: Infinity },
+            { title: "Passage 1", content: "This is the content for Passage 1. [Insert your passage here]", timeLimit: 180 },
+            { title: "Questions for Passage 1", content: "Questions for Passage 1: [Insert your questions here]", timeLimit: 120 },
+            { title: "Passage 2", content: "This is the content for Passage 2. [Insert your passage here]", timeLimit: 180 },
+            { title: "Questions for Passage 2", content: "Questions for Passage 2: [Insert your questions here]", timeLimit: 120 }
+        ];
 
         function startTimer() {
-            timerId = setInterval(countdown, 1000);
+            startTime = Date.now();
+            checkTime();
         }
 
-        function countdown() {
-            if (timeLeft == 0) {
-                clearTimeout(timerId);
-                alert("Time's up!");
-            } else {
-                let minutes = Math.floor(timeLeft / 60);
-                let seconds = timeLeft % 60;
-                document.getElementById('time').innerHTML =
-                    (minutes < 10 ? "0" : "") + minutes + ":" +
-                    (seconds < 10 ? "0" : "") + seconds;
-                timeLeft--;
+        function checkTime() {
+            if (!isPaused) {
+                const currentTime = Date.now();
+                const elapsedTime = (currentTime - startTime - totalPauseTime) / 1000;
+                pageTimes[currentPage] = elapsedTime;
+
+                if (elapsedTime >= pages[currentPage].timeLimit && currentPage > 0) {
+                    alert("Time's up for this section!");
+                    changePage('next');
+                } else {
+                    timeoutId = setTimeout(checkTime, 1000);
+                }
             }
         }
 
-        function changePage(pageNumber) {
-            // Reset timer
-            clearTimeout(timerId);
-            timeLeft = 60; // Reset to initial time
-            startTimer();
-
-            // Update content (you would expand this for more pages)
-            let content = document.getElementById('content');
-            if (pageNumber === 2) {
-                content.innerHTML = `
-                    <h1>Page 2</h1>
-                    <p>This is the content for page 2. You can add more <span class="bold">bold text</span> here.</p>
-                `;
-                document.querySelector('#navigation button').onclick = function() { changePage(1); };
-                document.querySelector('#navigation button').textContent = 'Previous Page';
+        function togglePause() {
+            isPaused = !isPaused;
+            const pauseButton = document.getElementById('pauseButton');
+            if (isPaused) {
+                pauseButton.textContent = 'Resume';
+                pauseStartTime = Date.now();
             } else {
-                content.innerHTML = `
-                    <h1>Page 1</h1>
-                    <p>This is a sample text with some <span class="bold">bold words</span>. You can easily modify this content for each page.</p>
-                `;
-                document.querySelector('#navigation button').onclick = function() { changePage(2); };
-                document.querySelector('#navigation button').textContent = 'Next Page';
+                pauseButton.textContent = 'Pause';
+                totalPauseTime += Date.now() - pauseStartTime;
+                checkTime();
             }
         }
 
-        // Start the timer when the page loads
-        startTimer();
+        function showOverlay() {
+            const overlay = document.getElementById('overlay');
+            overlay.classList.remove('hidden');
+            let countdown = 5;
+            overlay.textContent = countdown;
+
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    overlay.textContent = countdown;
+                } else {
+                    clearInterval(countdownInterval);
+                    overlay.classList.add('hidden');
+                    changePage('next');
+                }
+            }, 1000);
+        }
+
+        function changePage(direction) {
+            clearTimeout(timeoutId);
+            if (direction === 'next') {
+                currentPage++;
+            } else if (direction === 'prev') {
+                currentPage--;
+            }
+
+            if (currentPage < 0) currentPage = 0;
+            if (currentPage >= pages.length) {
+                displaySummary();
+                return;
+            }
+
+            updateContent();
+            if (currentPage > 0) {
+                startTimer();
+            }
+
+            if (currentPage === 2) {
+                showOverlay();
+            }
+        }
+
+        function updateContent() {
+            const content = document.getElementById('content');
+            content.innerHTML = `<h1>${pages[currentPage].title}</h1><p>${pages[currentPage].content}</p>`;
+
+            const prevButton = document.getElementById('prevButton');
+            const nextButton = document.getElementById('nextButton');
+
+            prevButton.style.display = currentPage === 0 ? 'none' : 'inline';
+            nextButton.textContent = currentPage === pages.length - 1 ? 'Finish' : 'Next';
+        }
+
+        function displaySummary() {
+            const content = document.getElementById('content');
+            let summaryHTML = '<h1>Test Summary</h1><ul>';
+            for (let i = 1; i < pageTimes.length; i++) {
+                summaryHTML += `<li>${pages[i].title}: ${pageTimes[i].toFixed(2)} seconds</li>`;
+            }
+            summaryHTML += `<li>Total Pause Time: ${(totalPauseTime / 1000).toFixed(2)} seconds</li>`;
+            summaryHTML += '</ul>';
+            content.innerHTML = summaryHTML;
+
+            document.getElementById('navigation').style.display = 'none';
+            document.getElementById('pauseButton').style.display = 'none';
+        }
+
+        // Initialize the first page
+        updateContent();
     </script>
 </body>
 </html>
