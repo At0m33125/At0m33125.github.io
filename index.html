@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reading Comprehension Test</title>
+    <title>Reading Comprehension Study</title>
     <style>
         :root {
             --primary-color: #3498db;
@@ -32,8 +32,11 @@
             margin-top: 40px;
         }
 
-        h1 {
+        h1, h2, h3 {
             color: var(--primary-color);
+        }
+
+        h1 {
             text-align: center;
             margin-bottom: 30px;
         }
@@ -56,9 +59,13 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-size: 24px;
+            font-size: 48px;
             color: white;
             z-index: 1000;
+        }
+
+        #overlayText {
+            text-align: center;
         }
 
         .hidden {
@@ -121,16 +128,128 @@
             text-align: justify;
             line-height: 1.8;
         }
+
+        .consent-section {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        #consentCheckbox {
+            margin-right: 10px;
+        }
+
+        .user-info {
+            margin-top: 20px;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.5s ease, max-height 0.5s ease;
+        }
+
+        .user-info.visible {
+            opacity: 1;
+            max-height: 200px;
+        }
+
+        .user-info input {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        #startTest {
+            display: none;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Reading Comprehension Test</h1>
-        <button id="pauseButton" onclick="togglePause()">Pause</button>
-        <div id="content"></div>
-        <div id="navigation">
-            <button onclick="changePage('prev')" id="prevButton">Previous (Testing)</button>
-            <button onclick="changePage('next')" id="nextButton">Next</button>
+        <div id="frontPage">
+            <h1>Reading Comprehension Study Across Age Groups</h1>
+            <h2>Participant Instructions</h2>
+            <p>Thank you for participating in this science fair project on reading comprehension. Your contribution will help us understand various aspects of reading across different age groups.</p>
+            
+            <h3>What You'll Be Doing:</h3>
+            <ol>
+                <li><strong>Pre-Test Questionnaire</strong>: A brief survey about your reading habits and background.</li>
+                <li><strong>Reading Tasks</strong>: You'll read several short passages on a computer screen.</li>
+                <li><strong>Comprehension Quizzes</strong>: After each passage, you'll answer a few multiple-choice questions.</li>
+                <li><strong>Post-Test Survey</strong>: A short questionnaire about your experience with the reading tasks.</li>
+            </ol>
+
+            <h3>Important Instructions:</h3>
+            <ul>
+                <li>Read each passage at your natural pace - this isn't a speed reading contest.</li>
+                <li>Try to understand the content as you would normally when reading.</li>
+                <li>Answer the comprehension questions to the best of your ability.</li>
+                <li>If you wear glasses or contact lenses for reading, please wear them during the test.</li>
+                <li>Feel free to take short breaks between passages if needed.</li>
+                <li>There are no "right" or "wrong" ways to read - we're interested in your natural reading behavior.</li>
+            </ul>
+
+            <h3>Safety Considerations:</h3>
+            <ul>
+                <li>You'll be reading from a computer screen. To minimize eye strain:
+                    <ul>
+                        <li>The screen will be positioned at a comfortable distance and angle.</li>
+                        <li>The room will be well-lit to reduce glare.</li>
+                        <li>You're encouraged to blink regularly and look away from the screen during breaks.</li>
+                    </ul>
+                </li>
+                <li>If you experience any discomfort, please inform the researcher immediately.</li>
+            </ul>
+
+            <h3>What to Expect:</h3>
+            <ul>
+                <li>The entire process will take about 30-45 minutes.</li>
+                <li>You'll be seated comfortably in front of a computer screen.</li>
+                <li>Your data will be kept confidential and used only for this science fair project.</li>
+            </ul>
+
+            <h3>Data Collection:</h3>
+            <ul>
+                <li>We'll measure the time it takes you to read each passage.</li>
+                <li>Your scores on the comprehension quizzes will be recorded.</li>
+                <li>All data will be anonymized to protect your privacy.</li>
+            </ul>
+
+            <h3>Before We Begin:</h3>
+            <ul>
+                <li>Please silence your phone and remove any potential distractions.</li>
+                <li>If you have any questions, ask the researcher before starting.</li>
+                <li>Remember, you can withdraw from the study at any time without penalty.</li>
+            </ul>
+
+            <div class="consent-section">
+                <h3>Consent:</h3>
+                <p>By participating, you (and your parent/guardian if you're under 18) agree to have your anonymized data used for this science fair project.</p>
+                <label>
+                    <input type="checkbox" id="consentCheckbox">
+                    I agree to participate in this study
+                </label>
+            </div>
+
+            <div class="user-info" id="userInfo">
+                <input type="email" id="emailInput" placeholder="Enter your email" required>
+                <input type="number" id="ageInput" placeholder="Enter your age" required min="1" max="120">
+            </div>
+
+            <button id="startTest" onclick="startTest()">Start Test</button>
+        </div>
+
+        <div id="testContent" class="hidden">
+            <button id="pauseButton" onclick="togglePause()">Pause</button>
+            <div id="content"></div>
+            <div id="navigation">
+                <button onclick="changePage('prev')" id="prevButton">Previous (Testing)</button>
+                <button onclick="changePage('next')" id="nextButton">Next</button>
+            </div>
         </div>
     </div>
     <div id="overlay" class="hidden">
@@ -138,14 +257,22 @@
         <button id="resumeButton" onclick="togglePause()" class="hidden">Resume</button>
     </div>
 
+    <script src="https://apis.google.com/js/api.js"></script>
     <script>
-        let currentPage = -1; // Start at -1 for the introduction page
+        let currentPage = -1;
         let pageTimes = [];
         let startTime;
         let isPaused = false;
         let pauseStartTime;
         let totalPauseTime = 0;
         let timeoutId;
+        let userData = {
+            email: '',
+            age: '',
+            answers: [],
+            pageTimes: [],
+            totalPauseTime: 0
+        };
 
         const introPage = {
             content: "Welcome to the Reading Comprehension Test. This test consists of passages followed by questions. You will have a limited time for each section. Click 'Next' to begin.",
@@ -186,6 +313,37 @@
 
         let pageOrder = [];
 
+        document.getElementById('consentCheckbox').addEventListener('change', function() {
+            const userInfo = document.getElementById('userInfo');
+            const startTest = document.getElementById('startTest');
+            if (this.checked) {
+                userInfo.classList.add('visible');
+                startTest.style.display = 'block';
+            } else {
+                userInfo.classList.remove('visible');
+                startTest.style.display = 'none';
+            }
+        });
+
+        function startTest() {
+            const email = document.getElementById('emailInput').value;
+            const age = document.getElementById('ageInput').value;
+
+            if (!email || !age) {
+                alert('Please enter both email and age.');
+                return;
+            }
+
+            userData.email = email;
+            userData.age = age;
+
+            document.getElementById('frontPage').classList.add('hidden');
+            document.getElementById('testContent').classList.remove('hidden');
+
+            shufflePages();
+            updateContent();
+        }
+
         function shufflePages() {
             pageOrder = [{type: 'intro', index: 0}];
             const passageIndices = Array.from({length: passages.length}, (_, i) => i);
@@ -208,6 +366,7 @@
                 const currentTime = Date.now();
                 const elapsedTime = (currentTime - startTime - totalPauseTime) / 1000;
                 pageTimes[currentPage] = elapsedTime;
+                userData.pageTimes[currentPage] = elapsedTime;
 
                 const currentPageData = pageOrder[currentPage];
                 const timeLimit = currentPageData.type === 'passage' 
@@ -241,6 +400,7 @@
             } else {
                 pauseButton.textContent = 'Pause';
                 totalPauseTime += Date.now() - pauseStartTime;
+                userData.totalPauseTime = totalPauseTime;
                 overlay.classList.add('hidden');
                 resumeButton.classList.add('hidden');
                 checkTime();
@@ -286,14 +446,14 @@
             } else {
                 startTimer();
             }
-
+        
             updateContent();
         }
-
+        
         function updateContent() {
             const content = document.getElementById('content');
             const currentPageData = pageOrder[currentPage];
-
+        
             if (currentPageData.type === 'intro') {
                 content.innerHTML = `<p>${introPage.content}</p>`;
             } else if (currentPageData.type === 'passage') {
@@ -307,7 +467,7 @@
                             <div class="options">
                                 ${q.options.map((option, i) => `
                                     <label class="option">
-                                        <input type="radio" name="q${index}" value="${i}">
+                                        <input type="radio" name="q${index}" value="${i}" onchange="saveAnswer(${currentPageData.index}, ${index}, ${i})">
                                         ${option}
                                     </label>
                                 `).join('')}
@@ -317,14 +477,21 @@
                 });
                 content.innerHTML = `<p>Questions for passage ${currentPageData.index + 1}:</p>${questionsHTML}`;
             }
-
+        
             const prevButton = document.getElementById('prevButton');
             const nextButton = document.getElementById('nextButton');
-
+        
             prevButton.style.display = currentPage === 0 ? 'none' : 'inline';
             nextButton.textContent = currentPage === pageOrder.length - 1 ? 'Finish' : 'Next';
         }
-
+        
+        function saveAnswer(passageIndex, questionIndex, answerIndex) {
+            if (!userData.answers[passageIndex]) {
+                userData.answers[passageIndex] = [];
+            }
+            userData.answers[passageIndex][questionIndex] = answerIndex;
+        }
+        
         function displaySummary() {
             const content = document.getElementById('content');
             let summaryHTML = '<h1>Test Summary</h1><ul>';
@@ -337,16 +504,62 @@
             });
             summaryHTML += `<li>Total Pause Time: ${(totalPauseTime / 1000).toFixed(2)} seconds</li>`;
             summaryHTML += '</ul>';
+            summaryHTML += '<button onclick="submitTestData()">Submit Test Data</button>';
             content.innerHTML = summaryHTML;
-
+        
             document.getElementById('navigation').style.display = 'none';
             document.getElementById('pauseButton').style.display = 'none';
         }
-
+        
+        // Google Sheets API integration
+        const API_KEY = 'YOUR_API_KEY';
+        const SHEET_ID = 'YOUR_SHEET_ID';
+        
+        function loadSheetsAPI() {
+            gapi.load('client', initClient);
+        }
+        
+        function initClient() {
+            gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"],
+            }).then(function() {
+                console.log('Google Sheets API initialized');
+            }, function(error) {
+                console.error('Error initializing Google Sheets API:', error);
+            });
+        }
+        
+        function submitTestData() {
+            const data = [
+                new Date().toISOString(),
+                userData.email,
+                userData.age,
+                ...userData.pageTimes,
+                userData.totalPauseTime / 1000,
+                JSON.stringify(userData.answers)
+            ];
+        
+            gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: SHEET_ID,
+                range: 'Sheet1!A:Z',
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: [data]
+                }
+            }).then(function(response) {
+                console.log('Data submitted successfully');
+                alert('Test data submitted successfully! Thank you for participating.');
+            }, function(error) {
+                console.error('Error submitting data:', error);
+                alert('Error submitting test data. Please try again or contact the researcher.');
+            });
+        }
+        
         // Initialize the test
-        shufflePages();
-        currentPage = 0; // Start at the first page (introduction)
-        updateContent();
-    </script>
+    loadSheetsAPI();
+    shufflePages();
+    updateContent();
+</script>
 </body>
 </html>
