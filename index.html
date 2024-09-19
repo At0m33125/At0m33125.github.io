@@ -321,12 +321,20 @@
             if (this.checked) {
                 userInfo.classList.add('visible');
                 startTest.style.display = 'block';
-                userInfo.scrollIntoView({ behavior: 'smooth' });
+                
+                // Scroll to the bottom of the page
+                setTimeout(() => {
+                    window.scrollTo({
+                        top: document.documentElement.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }, 100);
             } else {
                 userInfo.classList.remove('visible');
                 startTest.style.display = 'none';
             }
         });
+
 
         function startTest() {
             const email = document.getElementById('emailInput').value;
