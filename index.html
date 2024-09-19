@@ -161,7 +161,7 @@
 
         .user-info input {
             display: block;
-            width: 50%;  /* Changed from 100% to 50% */
+            width: 50%;
             padding: 10px;
             margin-top: 5px;
             border: 1px solid #ddd;
@@ -335,7 +335,6 @@
             }
         });
 
-
         function startTest() {
             const email = document.getElementById('emailInput').value;
             const age = document.getElementById('ageInput').value;
@@ -353,6 +352,7 @@
 
             shufflePages();
             updateContent();
+            startTimer();
         }
 
         function shufflePages() {
@@ -416,31 +416,50 @@
             }
         }
 
+        function showOverlay() {
+            const overlay = document.getElementById('overlay');
+            const overlayText = document.getElementById('overlayText');
+            overlay.classList.remove('hidden');
+            let countdown = 5;
+            overlayText.innerHTML = `Next section in:<br>${countdown}`;
+
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    overlayText.innerHTML = `Next section in:<br>${countdown}`;
+                } else {
+                    clearInterval(countdownInterval);
+                    overlay.classList.add('hidden');
+                    startTimer();
+                }
+            }, 1000);
+        }
+
         function changePage(direction) {
             clearTimeout(timeoutId);
             if (direction === 'next') {
                 currentPage++;
             }
-
+        
             if (currentPage >= pageOrder.length) {
                 displaySummary();
                 return;
             }
-
+        
             const currentPageData = pageOrder[currentPage];
             if (currentPageData.type === 'passage') {
                 showOverlay();
             } else {
                 startTimer();
             }
-
+        
             updateContent();
         }
-
+        
         function updateContent() {
             const content = document.getElementById('content');
             const currentPageData = pageOrder[currentPage];
-
+        
             if (currentPageData.type === 'passage') {
                 content.innerHTML = `<p>${passages[currentPageData.index].content}</p>`;
             } else {
@@ -462,18 +481,18 @@
                 });
                 content.innerHTML = `<p>Questions for passage ${currentPageData.index + 1}:</p>${questionsHTML}`;
             }
-
+        
             const nextButton = document.getElementById('nextButton');
             nextButton.textContent = currentPage === pageOrder.length - 1 ? 'Finish' : 'Next';
         }
-
+        
         function saveAnswer(passageIndex, questionIndex, answerIndex) {
             if (!userData.answers[passageIndex]) {
                 userData.answers[passageIndex] = [];
             }
             userData.answers[passageIndex][questionIndex] = answerIndex;
         }
-
+        
         function displaySummary() {
             const content = document.getElementById('content');
             content.innerHTML = '<h1>Thank you for participating!</h1><p>Your responses have been recorded.</p>';
@@ -481,6 +500,7 @@
             document.getElementById('pauseButton').style.display = 'none';
             submitTestData();
         }
+        
         // Google Sheets API integration
         const API_KEY = 'AIzaSyBnt8YuO1Hft6k5PiPPZnJQK9YGbqrA_Ro';
         const SHEET_ID = '1Bcuoq-b47WxZ7qr6GO1oCvPMJ9hYIkomwhPhHm7zkVw';
@@ -488,7 +508,7 @@
         function loadSheetsAPI() {
             gapi.load('client', initClient);
         }
-
+        
         function initClient() {
             gapi.client.init({
                 apiKey: API_KEY,
@@ -499,7 +519,7 @@
                 console.error('Error initializing Google Sheets API:', error);
             });
         }
-
+        
         function submitTestData() {
             const data = [
                 new Date().toISOString(),
@@ -509,7 +529,7 @@
                 userData.totalPauseTime / 1000,
                 JSON.stringify(userData.answers)
             ];
-
+        
             gapi.client.sheets.spreadsheets.values.append({
                 spreadsheetId: SHEET_ID,
                 range: 'Sheet1!A:Z',
@@ -526,9 +546,8 @@
         }
         
         // Initialize the test
-    loadSheetsAPI();
-    shufflePages();
-    updateContent();
+        loadSheetsAPI();
 </script>
 </body>
 </html>
+        
